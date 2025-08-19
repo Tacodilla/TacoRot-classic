@@ -1,4 +1,4 @@
--- core.lua — Ace3 core for TacoRot (Classic Anniversary 1.15.5)
+local addonName = ...
 local AceAddon = LibStub and LibStub("AceAddon-3.0")
 if not AceAddon then return end
 
@@ -7,7 +7,7 @@ local AceConfig       = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceDBOptions    = LibStub("AceDBOptions-3.0")
 
-local TR = AceAddon:NewAddon("TacoRot", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local TR = AceAddon:NewAddon(addonName or "TacoRot", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 _G.TacoRot = TR
 
 -- ================= Defaults =================

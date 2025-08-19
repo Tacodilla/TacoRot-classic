@@ -1,4 +1,4 @@
-## TacoRot.toc
+## TacoRot-classic.toc
 ## Interface: 11505
 ## Title: TacoRot
 ## Notes: Rotation helper for Classic Anniversary. DPS specs with auto-detect and keybind overlays.
