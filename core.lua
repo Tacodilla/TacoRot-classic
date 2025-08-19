@@ -128,13 +128,16 @@ end
 function TR:HandleWorldEnter()
   local _, class = UnitClass("player")
   if not class then return end
-  
+
+  -- normalize the class token to proper case (e.g., "WARRIOR" -> "Warrior")
+  local camel = class:lower():gsub('^%l', string.upper)
+
   self._engineStates = self._engineStates or {}
-  
-  local startMethod = "StartEngine_" .. class
-  if self[startMethod] and not self._engineStates[class] then
+
+  local startMethod = "StartEngine_" .. camel
+  if self[startMethod] and not self._engineStates[camel] then
     self[startMethod](self)
-    self._engineStates[class] = true
+    self._engineStates[camel] = true
   end
   
   if self.SendMessage then 
