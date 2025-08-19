@@ -8,10 +8,40 @@ local IDS = {
     AutoAttack = 6603,
   },
   Rank = {
-    Main = {5176, 5177, 5178},
-    Buff = {774, 1058, 1430},
+    Main = {5176,5177,5178,5179,5180,6780,8905,9912},
+    Buff = {774,1058,1430,2090,2091,3627,8910,9839,9840,9841},
     AutoAttack = {6603},
   },
+  Spell = {
+    Balance = {
+      Wrath        = 5176,
+      Moonfire     = 8921,
+      Starfire     = 2912,
+      InsectSwarm  = 5570,
+      Hurricane    = 16914,
+    },
+    Feral = {
+      Claw         = 1082,
+      Rake         = 1822,
+      Shred        = 5221,
+      Rip          = 1079,
+      FerociousBite= 22568,
+      Prowl        = 5215,
+      Maul         = 6807,
+      Swipe        = 779,
+      Growl        = 6795,
+      DemoralizingRoar = 99,
+      Bash         = 5211,
+    },
+    Restoration = {
+      HealingTouch = 5185,
+      Regrowth     = 8936,
+      Rejuvenation = 774,
+      Swiftmend    = 18562,
+      Tranquility  = 740,
+      Innervate    = 29166,
+    }
+  }
 }
 
 local function bestRank(list)

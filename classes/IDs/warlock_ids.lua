@@ -9,11 +9,38 @@ local IDS = {
     Wand       = 5019,
   },
   Rank = {
-    Main = {686, 695, 705, 1088},
-    Buff = {687, 696},
+    Main = {686,695,705,1088,1106,7641,11659,11660,11661,25307},
+    Buff = {687,696,706,1086,11733,11734,11735},
     Wand = {5019},
     AutoAttack = {6603},
   },
+  Spell = {
+    Affliction = {
+      Corruption    = 172,
+      CurseOfAgony  = 980,
+      DrainLife     = 689,
+      LifeTap       = 1454,
+      SiphonLife    = 18265,
+    },
+    Demonology = {
+      SummonImp       = 688,
+      SummonVoidwalker= 697,
+      SummonSuccubus  = 712,
+      SummonFelhunter = 691,
+      Soulstone       = 20707,
+      Healthstone     = 6201,
+      DemonArmor      = 706,
+    },
+    Destruction = {
+      ShadowBolt    = 686,
+      Immolate      = 348,
+      Conflagrate   = 17962,
+      Shadowburn    = 17877,
+      SearingPain   = 5676,
+      RainOfFire    = 5740,
+      Hellfire      = 1949,
+    }
+  }
 }
 
 local function bestRank(list)

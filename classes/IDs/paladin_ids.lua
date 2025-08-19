@@ -9,9 +9,32 @@ local IDS = {
   },
   Rank = {
     Main = {20271},
-    Buff = {19740, 19834},
+    Buff = {19740,19834,19835,19836,19837,19838},
     AutoAttack = {6603},
   },
+  Spell = {
+    Holy = {
+      HolyLight          = 635,
+      FlashOfLight       = 19750,
+      HolyShock          = 20473,
+      Cleanse            = 4987,
+      LayOnHands         = 633,
+    },
+    Protection = {
+      DevotionAura       = 465,
+      Consecration       = 26573,
+      HammerOfJustice    = 853,
+      BlessingOfProtection = 1022,
+      DivineShield       = 642,
+    },
+    Retribution = {
+      Judgement          = 20271,
+      SealOfCommand      = 20375,
+      Exorcism           = 879,
+      HolyWrath          = 2812,
+      SealOfRighteousness= 21084,
+    }
+  }
 }
 
 local function bestRank(list)

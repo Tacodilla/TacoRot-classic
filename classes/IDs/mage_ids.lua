@@ -9,11 +9,49 @@ local IDS = {
     Wand       = 5019,  -- Shoot
   },
   Rank = {
-    Main = {116, 205, 837, 7322},
-    Buff = {1459, 1460, 1461},
+    -- Full rank list up to level 60
+    Main = {116,205,837,7322,8406,8407,8408,10179,10180,10181},
+    Buff = {1459,1460,1461,10156,10157},
     Wand = {5019},
     AutoAttack = {6603},
   },
+  Spell = {
+    Arcane = {
+      ArcaneMissiles    = 5143,
+      ArcaneExplosion   = 1449,
+      Counterspell      = 2139,
+      Evocation         = 12051,
+      ArcaneIntellect   = 1459,
+      PresenceOfMind    = 12043,
+      ManaShield        = 1463,
+    },
+    Fire = {
+      Fireball          = 133,
+      FireBlast         = 2136,
+      Scorch            = 2948,
+      Pyroblast         = 11366,
+      Flamestrike       = 2120,
+      BlastWave         = 11113,
+      Combustion        = 11129,
+    },
+    Frost = {
+      Frostbolt         = 116,
+      FrostNova         = 122,
+      ConeOfCold        = 120,
+      Blizzard          = 10,
+      IceBarrier        = 11426,
+      IceBlock          = 11958,
+      ColdSnap          = 12472,
+    },
+    Utility = {
+      Blink             = 1953,
+      Polymorph         = 118,
+      RemoveLesserCurse = 475,
+      DetectMagic       = 2855,
+      AmplifyMagic      = 1008,
+      DampenMagic       = 604,
+    }
+  }
 }
 
 local function bestRank(list)
