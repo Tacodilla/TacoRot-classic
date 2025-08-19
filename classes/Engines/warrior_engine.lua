@@ -1,64 +1,46 @@
+-- warrior_engine.lua — Classic Anniversary Warrior Engine
+DEFAULT_CHAT_FRAME:AddMessage("|cff55ff55[TacoRot]|r Warrior engine loaded")
+
 local TR = _G.TacoRot
-if not TR then return end
+local IDS = _G.TacoRot_IDS_Warrior
 
--- Config
-local TOKEN = "WARRIOR"
-local function Pad()
-  local p = TR and TR.db and TR.db.profile and TR.db.profile.pad
-  local v = p and p[TOKEN]
-  if not v then return {enabled=true, gcd=1.5} end
-  if v.enabled == nil then v.enabled = true end
-  v.gcd = v.gcd or 1.5
-  return v
-end
-
+-- Helper functions
 local function BuffCfg()
-  local p = TR and TR.db and TR.db.profile and TR.db.profile.buff
-  return (p and p[TOKEN]) or {enabled=true}
-end
-
--- Helpers
-local function Known(id)
-  return id and IsSpellKnown and IsSpellKnown(id)
+  return (TR.db and TR.db.profile and TR.db.profile.buff and TR.db.profile.buff.WARRIOR) or {}
 end
 
 local function ReadyNow(id)
-  if not Known(id) then return false end
-  local start, duration = GetSpellCooldown(id)
-  if not start or duration == 0 then return true end
-  return (GetTime() - start) >= duration
+  if not id then return false end
+  local start, dur = GetSpellCooldown(id)
+  return start == 0 or (start + dur - GetTime()) < 0.1
 end
 
 local function ReadySoon(id)
-  local pad = Pad()
-  if not pad.enabled then return ReadyNow(id) end
-  if not Known(id) then return false end
-  local start, duration = GetSpellCooldown(id)
-  if not start or duration == 0 then return true end
-  local remaining = (start + duration) - GetTime()
-  return remaining <= (pad.gcd or 1.5)
-end
-
-local function DebuffUp(unit, spellID)
-  if not spellID then return false end
-  local name = GetSpellInfo(spellID)
-  if not name then return false end
-  for i = 1, 16 do
-    local debuffName = UnitDebuff(unit, i)
-    if not debuffName then break end
-    if debuffName == name then return true end
-  end
-  return false
+  if not id then return false end
+  local start, dur = GetSpellCooldown(id)
+  return start == 0 or (start + dur - GetTime()) < 1.5
 end
 
 local function BuffUp(unit, spellID)
   if not spellID then return false end
   local name = GetSpellInfo(spellID)
   if not name then return false end
-  for i = 1, 32 do
+  for i = 1, 40 do
     local buffName = UnitBuff(unit, i)
     if not buffName then break end
     if buffName == name then return true end
+  end
+  return false
+end
+
+local function DebuffUp(unit, spellID)
+  if not spellID then return false end
+  local name = GetSpellInfo(spellID)
+  if not name then return false end
+  for i = 1, 40 do
+    local debuffName = UnitDebuff(unit, i)
+    if not debuffName then break end
+    if debuffName == name then return true end
   end
   return false
 end
@@ -75,6 +57,18 @@ local function Rage()
   return UnitMana("player") or 0
 end
 
+local function Health()
+  local hp = UnitHealth("player")
+  local max = UnitHealthMax("player")
+  return max > 0 and (hp / max) or 1
+end
+
+local function TargetHealth()
+  local hp = UnitHealth("target")
+  local max = UnitHealthMax("target")
+  return max > 0 and (hp / max) or 1
+end
+
 local function GetStance()
   -- Returns current stance: 1=Battle, 2=Defensive, 3=Berserker
   for i = 1, 3 do
@@ -85,14 +79,14 @@ local function GetStance()
 end
 
 local function pad3(q, fb)
-  q[1] = q[1] or fb
+  q[1] = q[1] or fb or IDS.Ability.AutoAttack
   q[2] = q[2] or q[1]
   q[3] = q[3] or q[2]
   return q
 end
 
 local function Push(q, id)
-  if id then q[#q + 1] = id end
+  if id and #q < 3 then q[#q + 1] = id end
 end
 
 -- Talent detection
@@ -110,7 +104,7 @@ end
 -- OOC Buffs
 local function BuildBuffQueue()
   local cfg = BuffCfg()
-  if not cfg.enabled then return end
+  if not cfg.enabled then return {} end
   
   local q = {}
   
@@ -118,6 +112,13 @@ local function BuildBuffQueue()
   if cfg.battleShout ~= false then
     if not BuffUp("player", IDS.Ability.BattleShout) and ReadySoon(IDS.Ability.BattleShout) then
       Push(q, IDS.Ability.BattleShout)
+    end
+  end
+  
+  -- Commanding Shout (if no Battle Shout)
+  if #q == 0 and cfg.commandingShout ~= false then
+    if not BuffUp("player", IDS.Ability.CommandingShout) and ReadySoon(IDS.Ability.CommandingShout) then
+      Push(q, IDS.Ability.CommandingShout)
     end
   end
   
@@ -129,94 +130,118 @@ local function BuildQueue()
   local q = {}
   local tree = PrimaryTab() -- 1=Arms, 2=Fury, 3=Prot
   local stance = GetStance()
+  local rage = Rage()
+  local targetHp = TargetHealth()
   
   if not HaveTarget() then
-    return {IDS.Ability.BattleShout, IDS.Ability.BattleShout, IDS.Ability.BattleShout}
+    -- No target, show padding
+    return pad3({}, IDS.Ability.AutoAttack)
   end
   
-  -- Charge opener (Battle Stance only)
-  if not UnitAffectingCombat("player") and stance == 1 then
-    if not InMelee() and ReadyNow(IDS.Ability.Charge) then
+  -- Charge opener (Battle Stance only, out of combat, not in melee)
+  if not UnitAffectingCombat("player") and stance == 1 and not InMelee() then
+    if ReadyNow(IDS.Ability.Charge) then
       Push(q, IDS.Ability.Charge)
-      return pad3(q, IDS.Ability.HeroicStrike)
+      return pad3(q, IDS.Ability.AutoAttack)
     end
   end
   
-  -- Execute phase
-  local targetHealth = UnitHealth("target") / UnitHealthMax("target")
-  if targetHealth <= 0.2 and ReadySoon(IDS.Ability.Execute) then
+  -- Execute phase (20% or less health)
+  if targetHp <= 0.2 and rage >= 15 and ReadySoon(IDS.Ability.Execute) then
     Push(q, IDS.Ability.Execute)
   end
   
   if tree == 1 then
-    -- Arms rotation
-    -- Rend
-    if not DebuffUp("target", IDS.Ability.Rend) and ReadySoon(IDS.Ability.Rend) then
+    -- ARMS ROTATION
+    
+    -- Maintain Rend
+    if not DebuffUp("target", IDS.Ability.Rend) and rage >= 10 and ReadySoon(IDS.Ability.Rend) then
       Push(q, IDS.Ability.Rend)
     end
     
-    -- Overpower (Battle Stance)
-    if stance == 1 and ReadySoon(IDS.Ability.Overpower) then
-      Push(q, IDS.Ability.Overpower)
-    end
-    
-    -- Mortal Strike
-    if ReadySoon(IDS.Ability.MortalStrike) then
+    -- Mortal Strike on cooldown
+    if rage >= 30 and ReadySoon(IDS.Ability.MortalStrike) then
       Push(q, IDS.Ability.MortalStrike)
     end
     
-    -- Sweeping Strikes for AoE
+    -- Overpower when available (Battle Stance)
+    if stance == 1 and rage >= 5 and ReadySoon(IDS.Ability.Overpower) then
+      Push(q, IDS.Ability.Overpower)
+    end
+    
+    -- Sweeping Strikes for cleave
     if TR and TR.db and TR.db.profile and TR.db.profile.aoe then
-      if ReadySoon(IDS.Ability.SweepingStrikes) then
+      if rage >= 30 and ReadySoon(IDS.Ability.SweepingStrikes) then
         Push(q, IDS.Ability.SweepingStrikes)
+      end
+      -- Cleave as rage dump in AoE
+      if rage >= 20 and ReadySoon(IDS.Ability.Cleave) then
+        Push(q, IDS.Ability.Cleave)
       end
     end
     
+    -- Slam if available
+    if rage >= 15 and ReadySoon(IDS.Ability.Slam) then
+      Push(q, IDS.Ability.Slam)
+    end
+    
   elseif tree == 2 then
-    -- Fury rotation
-    -- Bloodthirst
-    if ReadySoon(IDS.Ability.Bloodthirst) then
+    -- FURY ROTATION
+    
+    -- Bloodthirst on cooldown
+    if rage >= 30 and ReadySoon(IDS.Ability.Bloodthirst) then
       Push(q, IDS.Ability.Bloodthirst)
     end
     
-    -- Whirlwind
-    if ReadySoon(IDS.Ability.Whirlwind) then
+    -- Whirlwind on cooldown
+    if rage >= 25 and ReadySoon(IDS.Ability.Whirlwind) then
       Push(q, IDS.Ability.Whirlwind)
     end
     
-    -- Rampage
-    if ReadySoon(IDS.Ability.Rampage) then
+    -- Rampage if available
+    if rage >= 20 and ReadySoon(IDS.Ability.Rampage) then
       Push(q, IDS.Ability.Rampage)
     end
     
+    -- Berserker Rage for rage generation
+    if rage < 20 and stance == 3 and ReadySoon(IDS.Ability.BerserkerRage) then
+      Push(q, IDS.Ability.BerserkerRage)
+    end
+    
   else
-    -- Protection rotation
-    -- Shield Slam
-    if ReadySoon(IDS.Ability.ShieldSlam) then
+    -- PROTECTION ROTATION
+    
+    -- Shield Slam (highest priority)
+    if rage >= 20 and ReadySoon(IDS.Ability.ShieldSlam) then
       Push(q, IDS.Ability.ShieldSlam)
     end
     
-    -- Revenge
-    if ReadySoon(IDS.Ability.Revenge) then
+    -- Revenge when available
+    if rage >= 5 and ReadySoon(IDS.Ability.Revenge) then
       Push(q, IDS.Ability.Revenge)
     end
     
-    -- Sunder Armor
+    -- Maintain Sunder Armor stacks
     local sunderStacks = 0
-    for i = 1, 16 do
+    for i = 1, 40 do
       local name, _, stack = UnitDebuff("target", i)
       if name == GetSpellInfo(IDS.Ability.SunderArmor) then
         sunderStacks = stack or 1
         break
       end
     end
-    if sunderStacks < 5 and ReadySoon(IDS.Ability.SunderArmor) then
+    if sunderStacks < 5 and rage >= 15 and ReadySoon(IDS.Ability.SunderArmor) then
       Push(q, IDS.Ability.SunderArmor)
+    end
+    
+    -- Shield Block for mitigation
+    if rage >= 10 and ReadySoon(IDS.Ability.ShieldBlock) then
+      Push(q, IDS.Ability.ShieldBlock)
     end
   end
   
   -- Rage dump with Heroic Strike or Cleave
-  if Rage() > 50 then
+  if rage > 50 then
     if TR and TR.db and TR.db.profile and TR.db.profile.aoe then
       if ReadySoon(IDS.Ability.Cleave) then
         Push(q, IDS.Ability.Cleave)
@@ -226,6 +251,18 @@ local function BuildQueue()
         Push(q, IDS.Ability.HeroicStrike)
       end
     end
+  end
+  
+  -- Thunder Clap for AoE threat/slow
+  if TR and TR.db and TR.db.profile and TR.db.profile.aoe then
+    if rage >= 20 and ReadySoon(IDS.Ability.ThunderClap) then
+      Push(q, IDS.Ability.ThunderClap)
+    end
+  end
+  
+  -- Hamstring for kiting/PvP
+  if rage >= 10 and ReadySoon(IDS.Ability.Hamstring) then
+    Push(q, IDS.Ability.Hamstring)
   end
   
   return q
@@ -239,18 +276,19 @@ function TR:EngineTick_Warrior()
   
   if not UnitAffectingCombat("player") then
     q = BuildBuffQueue() or {}
-    if not q[1] then
+    if #q == 0 then
       if HaveTarget() then
         q = BuildQueue()
       else
-        q = {IDS.Ability.BattleShout, IDS.Ability.BattleShout, IDS.Ability.BattleShout}
+        -- Show default padding when idle
+        q = {}
       end
     end
   else
     q = BuildQueue()
   end
   
-  q = pad3(q, IDS.Ability.HeroicStrike)
+  q = pad3(q, IDS.Ability.AutoAttack)
   self._lastMainSpell = q[1]
   
   if self.UI and self.UI.Update then
@@ -270,16 +308,4 @@ function TR:StopEngine_Warrior()
     self:CancelTimer(self._engineTimer_WA)
     self._engineTimer_WA = nil
   end
-end
-
--- Auto-start for warriors
-local _, class = UnitClass("player")
-if class == "WARRIOR" then
-  local f = CreateFrame("Frame")
-  f:RegisterEvent("PLAYER_LOGIN")
-  f:SetScript("OnEvent", function()
-    if TR and TR.StartEngine_Warrior then
-      TR:StartEngine_Warrior()
-    end
-  end)
 end
