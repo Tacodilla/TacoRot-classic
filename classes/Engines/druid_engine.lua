@@ -248,37 +248,41 @@ local function BuildCatQueue()
     return {}
   end
   
-  -- Low energy - just auto attack
-  if energy < 20 then
-    Push(q, IDS.Ability.AutoAttack)
-    return q
-  end
-  
-  -- Faerie Fire (Feral) for armor reduction
-  if Known(IDS.Ability.Faerie_Fire) and not DebuffUp("target", IDS.Ability.Faerie_Fire) then
-    if energy >= 35 and ReadySoon(IDS.Ability.Faerie_Fire) then
-      Push(q, IDS.Ability.Faerie_Fire)
-    end
-  end
-  
-  -- Tiger's Fury for energy regen
-  if Known(IDS.Ability.Tigers_Fury) and energy < 30 and ReadySoon(IDS.Ability.Tigers_Fury) then
-    Push(q, IDS.Ability.Tigers_Fury)
-  end
-  
   -- Finishing moves at 4-5 combo points
   if comboPoints >= 4 then
     -- Rip for longer fights
     if Known(IDS.Ability.Rip) and not DebuffUp("target", IDS.Ability.Rip) then
       if energy >= 30 and ReadySoon(IDS.Ability.Rip) then
         Push(q, IDS.Ability.Rip)
+        return q
       end
     elseif Known(IDS.Ability.Ferocious_Bite) and energy >= 35 and ReadySoon(IDS.Ability.Ferocious_Bite) then
       -- Ferocious Bite for burst
       Push(q, IDS.Ability.Ferocious_Bite)
+      return q
     end
   end
-  
+
+  -- Faerie Fire (Feral) for armor reduction
+  if Known(IDS.Ability.Faerie_Fire) and not DebuffUp("target", IDS.Ability.Faerie_Fire) then
+    if energy >= 35 and ReadySoon(IDS.Ability.Faerie_Fire) then
+      Push(q, IDS.Ability.Faerie_Fire)
+      return q
+    end
+  end
+
+  -- Tiger's Fury for energy regen
+  if Known(IDS.Ability.Tigers_Fury) and energy < 30 and ReadySoon(IDS.Ability.Tigers_Fury) then
+    Push(q, IDS.Ability.Tigers_Fury)
+    return q
+  end
+
+  -- Low energy - just auto attack if nothing else to do
+  if energy < 40 then
+    Push(q, IDS.Ability.AutoAttack)
+    return q
+  end
+
   -- Rake DoT (combo point generator)
   if Known(IDS.Ability.Rake) then
     if not DebuffUp("target", IDS.Ability.Rake) or DebuffTimeLeft("target", IDS.Ability.Rake) < 3 then
@@ -287,13 +291,13 @@ local function BuildCatQueue()
       end
     end
   end
-  
+
   -- Claw (main combo point generator)
   if energy >= 45 and ReadySoon(IDS.Ability.Claw) then
     Push(q, IDS.Ability.Claw)
   end
-  
-  -- Auto attack if low energy
+
+  -- Auto attack if nothing else
   if #q == 0 then
     Push(q, IDS.Ability.AutoAttack)
   end

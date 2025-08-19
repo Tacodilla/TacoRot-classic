@@ -7,6 +7,7 @@ local IDS = {
     Fireball         = 133,
     Frostbolt        = 116,
     ArcaneMissiles   = 5143,
+    Clearcasting     = 12536,
     AutoAttack       = 6603,
     Wand             = 5019,
     
@@ -102,5 +103,6 @@ local function setOnce(id, tex) if id and not fb[id] then fb[id] = tex end end
 setOnce(133,  "Interface\\Icons\\Spell_Fire_FlameBolt")
 setOnce(116,  "Interface\\Icons\\Spell_Frost_FrostBolt02")
 setOnce(5143, "Interface\\Icons\\Spell_Nature_StarFall")
+setOnce(12536, "Interface\\Icons\\Spell_Shadow_ManaBurn")
 setOnce(5019, "Interface\\Icons\\INV_Wand_01")
 setOnce(6603, "Interface\\Icons\\Ability_MeleeDamage")

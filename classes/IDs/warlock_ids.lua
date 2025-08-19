@@ -17,7 +17,7 @@ local IDS = {
     DrainLife = 689,
     DrainMana = 5138,
     Haunt = 48181,
-    SiphonSoul = 17877,
+    SiphonLife = 689,
     UnstableAffliction = 30108,
     
     -- Destruction spells
@@ -73,6 +73,9 @@ local IDS = {
     
     -- Searing Pain ranks
     SearingPain = {5676, 17919, 17920, 17921, 17922, 17923},
+
+    -- Shadowburn ranks
+    Shadowburn = {17877, 18867, 18868, 18869, 18870, 18871},
     
     -- Drain Soul ranks
     DrainSoul = {1120, 8288, 8289, 11675},

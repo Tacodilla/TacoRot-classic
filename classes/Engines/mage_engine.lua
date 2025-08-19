@@ -200,8 +200,8 @@ local function BuildQueue()
       Push(q, IDS.Ability.PresenceOfMind)
     end
     
-    -- Arcane Missiles if proc or clearcasting
-    if ReadySoon(IDS.Ability.ArcaneMissiles) then
+    -- Arcane Missiles only with Clearcasting to save mana
+    if BuffUp("player", IDS.Ability.Clearcasting) and ReadySoon(IDS.Ability.ArcaneMissiles) then
       Push(q, IDS.Ability.ArcaneMissiles)
     end
     
