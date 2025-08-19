@@ -154,39 +154,39 @@ local function BuildBuffQueue()
   return q
 end
 
--- Pet Management
-local function BuildPetQueue()
-  local cfg = PetCfg()
-  if not cfg.enabled then return end
-  
-  local q = {}
-  
-  -- Call Pet if no pet
-  if not HasPet() and cfg.summon ~= false then
-    if ReadySoon(IDS.Ability.CallPet) then
-      Push(q, IDS.Ability.CallPet)
-      return q
+  -- Pet Management
+  local function BuildPetQueue()
+    local cfg = PetCfg()
+    if not cfg.enabled then return end
+
+    local q = {}
+
+    -- Revive Pet if dead
+    if UnitExists("pet") and UnitIsDead("pet") and cfg.revive ~= false then
+      if ReadySoon(IDS.Ability.RevivePet) then
+        Push(q, IDS.Ability.RevivePet)
+        return q
+      end
     end
-  end
-  
-  -- Revive Pet if dead
-  if UnitExists("pet") and UnitIsDead("pet") and cfg.revive ~= false then
-    if ReadySoon(IDS.Ability.RevivePet) then
-      Push(q, IDS.Ability.RevivePet)
-      return q
+
+    -- Call Pet if no pet
+    if not UnitExists("pet") and cfg.summon ~= false then
+      if ReadySoon(IDS.Ability.CallPet) then
+        Push(q, IDS.Ability.CallPet)
+        return q
+      end
     end
-  end
-  
-  -- Mend Pet if hurt
-  if HasPet() and cfg.mend ~= false then
-    if PetHealth() < 0.6 and ReadySoon(IDS.Ability.MendPet) then
-      Push(q, IDS.Ability.MendPet)
-      return q
+
+    -- Mend Pet if hurt
+    if HasPet() and cfg.mend ~= false then
+      if PetHealth() < 0.6 and ReadySoon(IDS.Ability.MendPet) then
+        Push(q, IDS.Ability.MendPet)
+        return q
+      end
     end
+
+    return q
   end
-  
-  return q
-end
 
 -- DPS Rotation
 local function BuildQueue()
