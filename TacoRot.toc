@@ -13,24 +13,24 @@ ui.lua
 options.lua
 
 # Class IDs and Engines
-hunter_ids.lua
-engine_hunter.lua
-warrior_ids.lua
-engine_warrior.lua
-rogue_ids.lua
-engine_rogue.lua
-mage_ids.lua
-engine_mage.lua
-warlock_ids.lua
-engine_warlock.lua
-priest_ids.lua
-engine_priest.lua
-paladin_ids.lua
-engine_paladin.lua
-shaman_ids.lua
-engine_shaman.lua
-druid_ids.lua
-engine_druid.lua
+classes/IDs/hunter_ids.lua
+classes/Engines/hunter_engine.lua
+classes/IDs/warrior_ids.lua
+classes/Engines/warrior_engine.lua
+classes/IDs/rogue_ids.lua
+classes/Engines/rogue_engine.lua
+classes/IDs/mage_ids.lua
+classes/Engines/mage_engine.lua
+classes/IDs/warlock_ids.lua
+classes/Engines/warlock_engine.lua
+classes/IDs/priest_ids.lua
+classes/Engines/priest_engine.lua
+classes/IDs/paladin_ids.lua
+classes/Engines/paladin_engine.lua
+classes/IDs/shaman_ids.lua
+classes/Engines/shaman_engine.lua
+classes/IDs/druid_ids.lua
+classes/Engines/druid_engine.lua
 
 # Bootstrap last
 engine_bootstrap.lua
