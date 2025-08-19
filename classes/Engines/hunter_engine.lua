@@ -1,54 +1,56 @@
+-- hunter_engine.lua — Classic Anniversary Hunter Engine
+DEFAULT_CHAT_FRAME:AddMessage("|cff55ff55[TacoRot]|r Hunter engine loaded")
+
 local TR = _G.TacoRot
-if not TR then return end
+local IDS = _G.TacoRot_IDS_Hunter
 
--- Config
-local TOKEN = "HUNTER"
-local function Pad() 
-  local p = TR and TR.db and TR.db.profile and TR.db.profile.pad
-  local v = p and p[TOKEN]
-  if not v then return {enabled=true, gcd=1.5} end
-  if v.enabled == nil then v.enabled = true end
-  v.gcd = v.gcd or 1.5
-  return v
-end
-
+-- Helper functions
 local function BuffCfg()
-  local p = TR and TR.db and TR.db.profile and TR.db.profile.buff
-  return (p and p[TOKEN]) or {enabled=true}
+  return (TR.db and TR.db.profile and TR.db.profile.buff and TR.db.profile.buff.HUNTER) or {}
 end
 
 local function PetCfg()
-  local p = TR and TR.db and TR.db.profile and TR.db.profile.pet
-  return (p and p[TOKEN]) or {enabled=true}
+  return (TR.db and TR.db.profile and TR.db.profile.pet and TR.db.profile.pet.HUNTER) or {}
 end
 
--- Helpers
-local function Known(id) 
-  return id and IsSpellKnown and IsSpellKnown(id)
+local function HasPet()
+  return UnitExists("pet") and not UnitIsDead("pet")
 end
 
-local function ReadyNow(id)
-  if not Known(id) then return false end
-  local start, duration = GetSpellCooldown(id)
-  if not start or duration == 0 then return true end
-  return (GetTime() - start) >= duration
+local function PetHealth()
+  local hp = UnitHealth("pet")
+  local max = UnitHealthMax("pet")
+  return max > 0 and (hp / max) or 1
 end
 
-local function ReadySoon(id)
-  local pad = Pad()
-  if not pad.enabled then return ReadyNow(id) end
-  if not Known(id) then return false end
-  local start, duration = GetSpellCooldown(id)
-  if not start or duration == 0 then return true end
-  local remaining = (start + duration) - GetTime()
-  return remaining <= (pad.gcd or 1.5)
+local function AutoShotActive()
+  -- Check if auto shot is active
+  return IsAutoRepeatSpell(GetSpellInfo(IDS.Ability.AutoShot))
+end
+
+local function Mana()
+  local mana = UnitMana("player")
+  local maxMana = UnitManaMax("player")
+  return maxMana > 0 and (mana / maxMana) or 0
+end
+
+local function BuffUp(unit, spellID)
+  if not spellID then return false end
+  local name = GetSpellInfo(spellID)
+  if not name then return false end
+  for i = 1, 40 do
+    local buffName = UnitBuff(unit, i)
+    if not buffName then break end
+    if buffName == name then return true end
+  end
+  return false
 end
 
 local function DebuffUp(unit, spellID)
   if not spellID then return false end
   local name = GetSpellInfo(spellID)
   if not name then return false end
-  for i = 1, 16 do
+  for i = 1, 40 do
     local debuffName = UnitDebuff(unit, i)
     if not debuffName then break end
     if debuffName == name then return true end
@@ -56,16 +58,16 @@ local function DebuffUp(unit, spellID)
   return false
 end
 
-local function BuffUp(unit, spellID)
-  if not spellID then return false end
-  local name = GetSpellInfo(spellID)
-  if not name then return false end
-  for i = 1, 32 do
-    local buffName = UnitBuff(unit, i)
-    if not buffName then break end
-    if buffName == name then return true end
-  end
-  return false
+local function ReadyNow(id)
+  if not id then return false end
+  local start, dur = GetSpellCooldown(id)
+  return start == 0 or (start + dur - GetTime()) < 0.1
+end
+
+local function ReadySoon(id)
+  if not id then return false end
+  local start, dur = GetSpellCooldown(id)
+  return start == 0 or (start + dur - GetTime()) < 1.5
 end
 
 local function HaveTarget()
@@ -77,67 +79,42 @@ local function InMelee()
 end
 
 local function InRange()
-  -- Check if we're in ranged attack range
-  if not HaveTarget() then return false end
-  local name = GetSpellInfo(IDS.Ability.ArcaneShot)
-  if name then
-    return IsSpellInRange(name, "target") == 1
-  end
-  return not InMelee()
-end
-
-local function HasPet()
-  return UnitExists("pet") and not UnitIsDead("pet")
-end
-
-local function PetHealth()
-  if not HasPet() then return 1 end
-  local hp = UnitHealth("pet") or 0
-  local max = UnitHealthMax("pet") or 1
-  if max == 0 then return 1 end
-  return hp / max
-end
-
-local function AutoShotActive()
-  -- Classic: Check if Auto Shot is active
-  if not IsAutoRepeatAction then return false end
-  -- Check all action bar slots for Auto Shot
-  for i = 1, 120 do
-    if IsAutoRepeatAction(i) then
-      local actionType, id = GetActionInfo(i)
-      if actionType == "spell" then
-        local name = GetSpellInfo(id)
-        if name == GetSpellInfo(75) then -- Auto Shot
-          return true
-        end
-      end
-    end
-  end
-  return false
+  return IsSpellInRange(GetSpellInfo(IDS.Ability.ArcaneShot), "target") == 1
 end
 
 local function pad3(q, fb)
-  q[1] = q[1] or fb
+  q[1] = q[1] or fb or IDS.Ability.AutoShot
   q[2] = q[2] or q[1]
   q[3] = q[3] or q[2]
   return q
 end
 
 local function Push(q, id)
-  if id then q[#q + 1] = id end
+  if id and #q < 3 then q[#q + 1] = id end
+end
+
+-- Talent detection
+local function PrimaryTab()
+  local best, pts = 1, -1
+  for i = 1, 3 do
+    local _, _, points = GetTalentTabInfo(i)
+    if points and points > pts then
+      best, pts = i, points
+    end
+  end
+  return best
 end
 
 -- OOC Buffs
 local function BuildBuffQueue()
   local cfg = BuffCfg()
-  if not cfg.enabled then return end
+  if not cfg.enabled then return {} end
   
   local q = {}
   
-  -- Aspect check
+  -- Aspect of the Hawk for damage
   if cfg.aspect ~= false then
-    if not BuffUp("player", IDS.Ability.AspectOfTheHawk) and 
-       not BuffUp("player", IDS.Ability.AspectOfTheMonkey) then
+    if not BuffUp("player", IDS.Ability.AspectOfTheHawk) and not BuffUp("player", IDS.Ability.AspectOfTheMonkey) then
       if ReadySoon(IDS.Ability.AspectOfTheHawk) then
         Push(q, IDS.Ability.AspectOfTheHawk)
       end
@@ -154,122 +131,128 @@ local function BuildBuffQueue()
   return q
 end
 
-  -- Pet Management
-  local function BuildPetQueue()
-    local cfg = PetCfg()
-    if not cfg.enabled then return end
-
-    local q = {}
-
-    -- Revive Pet if dead
-    if UnitExists("pet") and UnitIsDead("pet") and cfg.revive ~= false then
-      if ReadySoon(IDS.Ability.RevivePet) then
-        Push(q, IDS.Ability.RevivePet)
-        return q
-      end
+-- Pet Management
+local function BuildPetQueue()
+  local cfg = PetCfg()
+  if not cfg.enabled then return {} end
+  
+  local q = {}
+  
+  -- Revive Pet if dead
+  if UnitExists("pet") and UnitIsDead("pet") and cfg.revive ~= false then
+    if ReadySoon(IDS.Ability.RevivePet) then
+      Push(q, IDS.Ability.RevivePet)
+      return q
     end
-
-    -- Call Pet if no pet
-    if not UnitExists("pet") and cfg.summon ~= false then
-      if ReadySoon(IDS.Ability.CallPet) then
-        Push(q, IDS.Ability.CallPet)
-        return q
-      end
-    end
-
-    -- Mend Pet if hurt
-    if HasPet() and cfg.mend ~= false then
-      if PetHealth() < 0.6 and ReadySoon(IDS.Ability.MendPet) then
-        Push(q, IDS.Ability.MendPet)
-        return q
-      end
-    end
-
-    return q
   end
+  
+  -- Call Pet if no pet
+  if not UnitExists("pet") and cfg.summon ~= false then
+    if ReadySoon(IDS.Ability.CallPet) then
+      Push(q, IDS.Ability.CallPet)
+      return q
+    end
+  end
+  
+  -- Mend Pet if hurt
+  if HasPet() and cfg.mend ~= false then
+    if PetHealth() < 0.7 and ReadySoon(IDS.Ability.MendPet) then
+      Push(q, IDS.Ability.MendPet)
+      return q
+    end
+  end
+  
+  return q
+end
 
 -- DPS Rotation
 local function BuildQueue()
   local q = {}
+  local tree = PrimaryTab() -- 1=Beast Mastery, 2=Marksmanship, 3=Survival
+  local mana = Mana()
   
   if not HaveTarget() then
-    -- No target, suggest pet maintenance
+    -- Pet management when idle
     local pq = BuildPetQueue()
-    if pq and pq[1] then 
-      return pq
-    else
-      return {IDS.Ability.AutoShot, IDS.Ability.AutoShot, IDS.Ability.AutoShot}
+    if pq and pq[1] then
+      return pad3(pq)
     end
+    return pad3({}, IDS.Ability.AutoShot)
   end
   
-  -- Out of combat setup
-  if not UnitAffectingCombat("player") then
-    -- Hunter's Mark
-    if not DebuffUp("target", IDS.Ability.HuntersMark) and ReadyNow(IDS.Ability.HuntersMark) then
-      Push(q, IDS.Ability.HuntersMark)
-    end
-    
-    -- Start Auto Shot if in range
-    if InRange() and not AutoShotActive() then
-      Push(q, IDS.Ability.AutoShot)
-    end
+  -- Hunter's Mark
+  if not DebuffUp("target", IDS.Ability.HuntersMark) and ReadySoon(IDS.Ability.HuntersMark) then
+    Push(q, IDS.Ability.HuntersMark)
   end
   
-  -- Combat rotation
   if InMelee() then
-    -- Melee rotation
-    if ReadyNow(IDS.Ability.RaptorStrike) then
-      table.insert(q, 1, IDS.Ability.RaptorStrike)
-    end
-    if #q < 3 and ReadySoon(IDS.Ability.WingClip) then
-      Push(q, IDS.Ability.WingClip)
-    end
-    -- Aspect of the Monkey for melee
+    -- MELEE ROTATION
+    -- Aspect of the Monkey in melee
     if not BuffUp("player", IDS.Ability.AspectOfTheMonkey) and ReadySoon(IDS.Ability.AspectOfTheMonkey) then
       Push(q, IDS.Ability.AspectOfTheMonkey)
     end
+    
+    -- Raptor Strike
+    if ReadySoon(IDS.Ability.RaptorStrike) then
+      Push(q, IDS.Ability.RaptorStrike)
+    end
+    
+    -- Mongoose Bite
+    if ReadySoon(IDS.Ability.MongooseBite) then
+      Push(q, IDS.Ability.MongooseBite)
+    end
+    
+    -- Wing Clip for kiting
+    if ReadySoon(IDS.Ability.WingClip) then
+      Push(q, IDS.Ability.WingClip)
+    end
+    
   else
-    -- Ranged rotation
-    -- Maintain Auto Shot
+    -- RANGED ROTATION
+    -- Aspect of the Hawk for ranged
+    if not BuffUp("player", IDS.Ability.AspectOfTheHawk) and ReadySoon(IDS.Ability.AspectOfTheHawk) then
+      Push(q, IDS.Ability.AspectOfTheHawk)
+    end
+    
+    -- Start Auto Shot
     if not AutoShotActive() then
-      table.insert(q, 1, IDS.Ability.AutoShot)
+      Push(q, IDS.Ability.AutoShot)
     end
     
     -- Aimed Shot (highest priority)
-    if ReadySoon(IDS.Ability.AimedShot) then
+    if mana > 0.3 and ReadySoon(IDS.Ability.AimedShot) then
       Push(q, IDS.Ability.AimedShot)
     end
     
     -- Multi-Shot for AoE
     if TR and TR.db and TR.db.profile and TR.db.profile.aoe then
-      if ReadySoon(IDS.Ability.MultiShot) then
+      if mana > 0.3 and ReadySoon(IDS.Ability.MultiShot) then
         Push(q, IDS.Ability.MultiShot)
       end
     end
     
     -- Serpent Sting
-    if not DebuffUp("target", IDS.Ability.SerpentSting) and ReadySoon(IDS.Ability.SerpentSting) then
+    if not DebuffUp("target", IDS.Ability.SerpentSting) and mana > 0.2 and ReadySoon(IDS.Ability.SerpentSting) then
       Push(q, IDS.Ability.SerpentSting)
     end
     
     -- Arcane Shot
-    if ReadySoon(IDS.Ability.ArcaneShot) then
+    if mana > 0.3 and ReadySoon(IDS.Ability.ArcaneShot) then
       Push(q, IDS.Ability.ArcaneShot)
     end
     
-    -- Aspect of the Hawk for ranged
-    if not BuffUp("player", IDS.Ability.AspectOfTheHawk) and ReadySoon(IDS.Ability.AspectOfTheHawk) then
-      Push(q, IDS.Ability.AspectOfTheHawk)
+    -- Bestial Wrath for pet burst
+    if tree == 1 and HasPet() and ReadySoon(IDS.Ability.BestialWrath) then
+      Push(q, IDS.Ability.BestialWrath)
+    end
+    
+    -- Rapid Fire for burst
+    if tree == 2 and ReadySoon(IDS.Ability.RapidFire) then
+      Push(q, IDS.Ability.RapidFire)
     end
   end
   
-  -- Pet queue if nothing else
-  if #q == 0 and not UnitAffectingCombat("player") then
-    local pq = BuildPetQueue()
-    if pq and pq[1] then q = pq end
-  end
-  
-  return pad3(q, IDS.Ability.AutoShot)
+  return q
 end
 
 -- Engine tick
@@ -280,8 +263,14 @@ function TR:EngineTick_Hunter()
   
   if not UnitAffectingCombat("player") then
     -- OOC: Priority is Pet > Buffs > Combat
-    q = BuildPetQueue() or BuildBuffQueue() or {}
-    if not q[1] then
+    local pq = BuildPetQueue()
+    local bq = BuildBuffQueue()
+    
+    if pq and pq[1] then
+      q = pq
+    elseif bq and bq[1] then
+      q = bq
+    else
       q = BuildQueue()
     end
   else
@@ -308,16 +297,4 @@ function TR:StopEngine_Hunter()
     self:CancelTimer(self._engineTimer_HU)
     self._engineTimer_HU = nil
   end
-end
-
--- Auto-start for hunters
-local _, class = UnitClass("player")
-if class == "HUNTER" then
-  local f = CreateFrame("Frame")
-  f:RegisterEvent("PLAYER_LOGIN")
-  f:SetScript("OnEvent", function()
-    if TR and TR.StartEngine_Hunter then
-      TR:StartEngine_Hunter()
-    end
-  end)
 end
