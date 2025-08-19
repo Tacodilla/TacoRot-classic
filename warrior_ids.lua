@@ -9,7 +9,7 @@ local IDS = {
     MortalStrike     = 12294,
     Rend             = 772,
     Overpower        = 7384,
-    Sweeping Strikes = 12328,
+    SweepingStrikes  = 12328,
     
     -- Fury  
     Bloodthirst      = 23881,
