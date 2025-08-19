@@ -1,0 +1,10 @@
+-----------------------------------
+-- Bindings.xml
+-----------------------------------
+<Bindings>
+    <Binding name="TACOROTUNLOCK" header="TacoRot">
+        if TacoRot and TacoRot.ToggleUnlock then 
+            TacoRot:ToggleUnlock() 
+        end
+    </Binding>
+</Bindings>

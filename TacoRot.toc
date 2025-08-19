@@ -1,0 +1,36 @@
+## TacoRot.toc
+## Interface: 11505
+## Title: TacoRot
+## Notes: Rotation helper for Classic Anniversary. DPS specs with auto-detect and keybind overlays.
+## Author: Steven (Classic Rewrite)
+## Version: 2.0-Classic
+## SavedVariables: TacoRotDB
+
+embeds.xml
+Bindings.xml
+core.lua
+ui.lua
+options.lua
+
+# Class IDs and Engines
+hunter_ids.lua
+engine_hunter.lua
+warrior_ids.lua
+engine_warrior.lua
+rogue_ids.lua
+engine_rogue.lua
+mage_ids.lua
+engine_mage.lua
+warlock_ids.lua
+engine_warlock.lua
+priest_ids.lua
+engine_priest.lua
+paladin_ids.lua
+engine_paladin.lua
+shaman_ids.lua
+engine_shaman.lua
+druid_ids.lua
+engine_druid.lua
+
+# Bootstrap last
+engine_bootstrap.lua
