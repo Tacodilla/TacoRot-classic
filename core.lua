@@ -149,12 +149,12 @@ end
 
 -- ================= Spell Tracking =================
 function TR:SpellCooldownUpdate()
-  -- Update internal cooldown tracking
+  -- Schedule rotation display update when cooldowns change
   self:ScheduleTimer("UpdateRotationDisplay", 0.1)
 end
 
 function TR:ActionCooldownUpdate()
-  -- Update internal cooldown tracking
+  -- Schedule rotation display update when cooldowns change
   self:ScheduleTimer("UpdateRotationDisplay", 0.1)
 end
 
