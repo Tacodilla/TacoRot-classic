@@ -4,6 +4,21 @@ DEFAULT_CHAT_FRAME:AddMessage("|cff55ff55[TacoRot]|r Rogue engine loaded")
 local TR = _G.TacoRot
 local IDS = _G.TacoRot_IDS_Rogue
 
+local TOKEN = "ROGUE"
+
+local function Pad()
+  local p = TR and TR.db and TR.db.profile and TR.db.profile.pad
+  local v = p and p[TOKEN]
+  if not v then return {enabled = true, gcd = 1.5} end
+  if v.enabled == nil then v.enabled = true end
+  v.gcd = v.gcd or 1.5
+  return v
+end
+
+local function Known(id)
+  return id and IsSpellKnown and IsSpellKnown(id)
+end
+
 -- Helper functions
 local function GetComboPoints()
   return GetComboPoints("player", "target") or 0
@@ -42,15 +57,17 @@ local function DebuffUp(unit, spellID)
 end
 
 local function ReadyNow(id)
-  if not id then return false end
+  if not Known(id) then return false end
   local start, dur = GetSpellCooldown(id)
   return start == 0 or (start + dur - GetTime()) < 0.1
 end
 
 local function ReadySoon(id)
-  if not id then return false end
+  local pad = Pad()
+  if not pad.enabled then return ReadyNow(id) end
+  if not Known(id) then return false end
   local start, dur = GetSpellCooldown(id)
-  return start == 0 or (start + dur - GetTime()) < 1.5
+  return start == 0 or (start + dur - GetTime()) < (pad.gcd or 1.5)
 end
 
 local function HaveTarget()

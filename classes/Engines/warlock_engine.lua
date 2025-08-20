@@ -164,31 +164,40 @@ end
 -- Pet management
 local function BuildPetQueue()
   local q = {}
-  
+
   if not HavePet() then
-    -- Summon pet based on spec/situation
+    local level = UnitLevel("player")
     local spec = GetPrimarySpec()
-    
-    if spec == "Affliction" then
-      -- Felhunter for pvp/dispel utility, or imp for leveling
-      if Known(IDS.Ability.SummonFelhunter) and UnitLevel("player") >= 30 then
-        Push(q, IDS.Ability.SummonFelhunter)
-      else
-        Push(q, IDS.Ability.SummonImp)
-      end
-    elseif spec == "Destruction" then
-      -- Imp for damage boost
-      Push(q, IDS.Ability.SummonImp)
-    else -- Demonology
-      -- Succubus for damage, Voidwalker for tanking
-      if UnitLevel("player") >= 20 then
-        Push(q, IDS.Ability.SummonSuccubus)
-      else
-        Push(q, IDS.Ability.SummonVoidwalker)
+
+    -- Prefer Voidwalker as soon as it's available
+    if level >= 10 and level < 20 and Known(IDS.Ability.SummonVoidwalker) then
+      Push(q, IDS.Ability.SummonVoidwalker)
+    else
+      if spec == "Affliction" then
+        -- Felhunter for pvp/dispel utility, or imp for leveling
+        if level >= 30 and Known(IDS.Ability.SummonFelhunter) then
+          Push(q, IDS.Ability.SummonFelhunter)
+        elseif Known(IDS.Ability.SummonImp) then
+          Push(q, IDS.Ability.SummonImp)
+        end
+      elseif spec == "Destruction" then
+        -- Imp for damage boost
+        if Known(IDS.Ability.SummonImp) then
+          Push(q, IDS.Ability.SummonImp)
+        end
+      else -- Demonology
+        -- Succubus for damage, Voidwalker for tanking
+        if level >= 20 and Known(IDS.Ability.SummonSuccubus) then
+          Push(q, IDS.Ability.SummonSuccubus)
+        elseif Known(IDS.Ability.SummonVoidwalker) then
+          Push(q, IDS.Ability.SummonVoidwalker)
+        elseif Known(IDS.Ability.SummonImp) then
+          Push(q, IDS.Ability.SummonImp)
+        end
       end
     end
   end
-  
+
   return q
 end
 
